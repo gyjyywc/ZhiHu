@@ -17,6 +17,29 @@
       android:background="@drawable/item_background_selector_light"
       android:orientation="horizontal">
 
+    <LinearLayout
+        android:id="@+id/editor"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+      <TextView
+          android:id="@+id/tv_topic"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="5dp"
+          android:text="主编"
+          android:textColor="@color/light_news_topic"
+          android:textSize="13sp"/>
+      <com.facebook.drawee.view.SimpleDraweeView
+          android:id="@+id/avatar"
+          android:background="@mipmap/ic_launcher"
+          android:layout_marginLeft="20dp"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

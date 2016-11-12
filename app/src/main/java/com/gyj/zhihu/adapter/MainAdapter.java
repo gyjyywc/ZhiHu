@@ -6,21 +6,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
-import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.gyj.zhihu.R;
-import com.gyj.zhihu.model.Latest;
+import com.gyj.zhihu.model.StoriesEntity;
+import com.gyj.zhihu.util.Constant;
+import java.util.ArrayList;
 import java.util.List;
 
-public class NewsItemAdapter extends BaseAdapter {
+public class MainAdapter extends BaseAdapter {
 
-  private List<Latest.StoriesEntity> entities;
+  private List<StoriesEntity> entities;
   private Context context;
 
-  public NewsItemAdapter(Context context, List<Latest.StoriesEntity> items) {
+  public MainAdapter(Context context) {
     this.context = context;
-    entities = items;
-    Fresco.initialize(context);
+    this.entities = new ArrayList<>();
+  }
+
+  public void addList(List<StoriesEntity> items) {
+    this.entities.addAll(items);
+    notifyDataSetChanged();
   }
 
   @Override
@@ -40,28 +45,35 @@ public class NewsItemAdapter extends BaseAdapter {
 
   @Override
   public View getView(int position, View convertView, ViewGroup parent) {
-    ViewHolder viewHolder = null;
+    ViewHolder viewHolder;
     if (convertView == null) {
       viewHolder = new ViewHolder();
-      convertView = LayoutInflater.from(context).inflate(R.layout.news_item, null);
+      convertView = LayoutInflater.from(context).inflate(R.layout.main_news_item, parent, false);
+      viewHolder.tv_topic = (TextView) convertView.findViewById(R.id.tv_topic);
       viewHolder.tv_title = (TextView) convertView.findViewById(R.id.tv_title);
       viewHolder.iv_title = (SimpleDraweeView) convertView.findViewById(R.id.iv_title);
       convertView.setTag(viewHolder);
     } else {
       viewHolder = (ViewHolder) convertView.getTag();
     }
-    Latest.StoriesEntity entity = entities.get(position);
-    viewHolder.tv_title.setText(entity.getTitle());
-    if (entity.getImages() != null) {
-      viewHolder.iv_title.setVisibility(View.VISIBLE);
-      viewHolder.iv_title.setImageURI(entity.getImages().get(0));
-    } else {
+    StoriesEntity entity = entities.get(position);
+    if (entity.getType() == Constant.TOPIC) {
+      viewHolder.tv_title.setVisibility(View.GONE);
       viewHolder.iv_title.setVisibility(View.GONE);
+      viewHolder.tv_topic.setVisibility(View.VISIBLE);
+      viewHolder.tv_topic.setText(entity.getTitle());
+    } else {
+      viewHolder.tv_topic.setVisibility(View.GONE);
+      viewHolder.tv_title.setVisibility(View.VISIBLE);
+      viewHolder.iv_title.setVisibility(View.VISIBLE);
+      viewHolder.tv_title.setText(entity.getTitle());
+      viewHolder.iv_title.setImageURI(entity.getImages().get(0));
     }
     return convertView;
   }
 
   public static class ViewHolder {
+    TextView tv_topic;
     TextView tv_title;
     SimpleDraweeView iv_title;
   }

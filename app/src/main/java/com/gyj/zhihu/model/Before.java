@@ -4,10 +4,10 @@ import java.util.List;
 
 public class Before {
 
-  private List<Latest.StoriesEntity> stories;
+  private List<StoriesEntity> stories;
   private String date;
 
-  public void setStories(List<Latest.StoriesEntity> stories) {
+  public void setStories(List<StoriesEntity> stories) {
     this.stories = stories;
   }
 
@@ -15,7 +15,7 @@ public class Before {
     this.date = date;
   }
 
-  public List<Latest.StoriesEntity> getStories() {
+  public List<StoriesEntity> getStories() {
     return stories;
   }
 

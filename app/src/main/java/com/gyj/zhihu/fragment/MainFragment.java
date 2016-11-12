@@ -2,7 +2,6 @@ package com.gyj.zhihu.fragment;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,10 +10,10 @@ import android.widget.ListView;
 import com.google.gson.Gson;
 import com.gyj.zhihu.R;
 import com.gyj.zhihu.activity.MainActivity;
-import com.gyj.zhihu.adapter.MainNewsAdapter;
-import com.gyj.zhihu.adapter.NewsItemAdapter;
+import com.gyj.zhihu.adapter.MainAdapter;
 import com.gyj.zhihu.model.Before;
 import com.gyj.zhihu.model.Latest;
+import com.gyj.zhihu.model.StoriesEntity;
 import com.gyj.zhihu.util.Banner;
 import com.gyj.zhihu.util.Constant;
 import com.gyj.zhihu.util.HttpUtil;
@@ -28,36 +27,21 @@ public class MainFragment extends BaseFragment {
 
   private ListView lv_news;
   private Banner banner;
-  private View header;
   private Before before;
   private String date;
-  private MainNewsAdapter mAdapter;
+  private MainAdapter mAdapter;
   public boolean isLoading = false;
-
-  private Handler handler = new Handler() {
-    @Override public void handleMessage(Message msg) {
-      switch (msg.what) {
-        case Constant.LATESTNUM:
-          String latestJsonData = (String) msg.obj;
-          setFirstData(latestJsonData);
-          //break;
-        case Constant.BEFORENUM:
-          String beforeJsonData = (String) msg.obj;
-          setBeforeData(beforeJsonData);
-          break;
-      }
-    }
-  };
+  private Handler mHandler = new Handler();
 
   @Override
   protected View initView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    ((MainActivity) mActivity).setToolbarTitle("今日热闻");
     View view = inflater.inflate(R.layout.right_layout, container, false);
     lv_news = (ListView) view.findViewById(R.id.lv_item_content);
-    header = inflater.inflate(R.layout.header_banner, lv_news, false);
+    View header = inflater.inflate(R.layout.header_banner, lv_news, false);
     banner = (Banner) header.findViewById(R.id.banner);
     lv_news.addHeaderView(header);
-
+    mAdapter = new MainAdapter(mActivity);
+    lv_news.setAdapter(mAdapter);
     lv_news.setOnScrollListener(new AbsListView.OnScrollListener() {
       @Override public void onScrollStateChanged(AbsListView view, int scrollState) {
 
@@ -69,8 +53,11 @@ public class MainFragment extends BaseFragment {
           boolean enable =
               (firstVisibleItem == 0) && (view.getChildAt(firstVisibleItem).getTop() == 0);
           ((MainActivity) mActivity).setSwipeRefreshEnable(enable);
+          if (enable) {
+            ((MainActivity) mActivity).setToolbarTitle("首页");
+          }
           if (firstVisibleItem + visibleItemCount == totalItemCount && !isLoading) {
-            loadMore(Constant.BEFORE + date, Constant.BEFORENUM);
+            loadMore(Constant.BEFORE + date);
           }
         }
       }
@@ -78,16 +65,8 @@ public class MainFragment extends BaseFragment {
     return view;
   }
 
-  private void loadMore(String url, int beforeNum) {
+  private void loadMore(String url) {
     isLoading = true;
-    okHttp(url, beforeNum);
-  }
-
-  @Override protected void initData() {
-    okHttp(Constant.LATEST, Constant.LATESTNUM);
-  }
-
-  private void okHttp(String url, final int Num) {
     Call mCall = new HttpUtil().getAsynHttp(url);
     mCall.enqueue(new Callback() {
       @Override public void onFailure(Call call, IOException e) {
@@ -95,39 +74,68 @@ public class MainFragment extends BaseFragment {
       }
 
       @Override public void onResponse(Call call, Response response) throws IOException {
-        String jsonString = response.body().string();
-        Message message = new Message();
-        message.what = Num;
-        message.obj = jsonString;
-        handler.sendMessage(message);
+        final String jsonString = response.body().string();
+        mHandler.post(new Runnable() {
+          @Override public void run() {
+            setBeforeData(jsonString);
+          }
+        });
+      }
+    });
+  }
+
+  @Override protected void initData() {
+    isLoading = true;
+    Call mCall = new HttpUtil().getAsynHttp(Constant.LATEST);
+    mCall.enqueue(new Callback() {
+      @Override public void onFailure(Call call, IOException e) {
+
+      }
+
+      @Override public void onResponse(Call call, Response response) throws IOException {
+        final String jsonString = response.body().string();
+        mHandler.post(new Runnable() {
+          @Override public void run() {
+            setFirstData(jsonString);
+          }
+        });
       }
     });
   }
 
   private void setFirstData(String jsondata) {
     Gson gson = new Gson();
-    Latest latest = gson.fromJson(jsondata, Latest.class);
-    List<Latest.StoriesEntity> storiesEntities = latest.getStories();
+    final Latest latest = gson.fromJson(jsondata, Latest.class);
+    date = latest.getDate();
     banner.setTopEntities(latest.getTop_stories());
-    Latest.StoriesEntity topic = new Latest.StoriesEntity();
-    topic.setTitle("今日热闻");
+    List<StoriesEntity> storiesEntities = latest.getStories();
+    StoriesEntity topic = new StoriesEntity();
     topic.setType(Constant.TOPIC);
+    topic.setTitle("今日热闻");
     storiesEntities.add(0, topic);
-    mAdapter = new MainNewsAdapter(mActivity,storiesEntities);
-    lv_news.setAdapter(mAdapter);
+    mAdapter.addList(storiesEntities);
+    isLoading = false;
   }
 
   private void setBeforeData(String jsondata) {
     Gson gson = new Gson();
     before = gson.fromJson(jsondata, Before.class);
+    if (before == null) {
+      isLoading = false;
+      return;
+    }
     date = before.getDate();
-    List<Latest.StoriesEntity> storiesEntities = before.getStories();
-    Latest.StoriesEntity topic = new Latest.StoriesEntity();
-    topic.setType(Constant.TOPIC);
-    topic.setTitle(convertDate(date));
-    storiesEntities.add(0, topic);
-    mAdapter.addList(storiesEntities);
-    isLoading = false;
+    mHandler.post(new Runnable() {
+      @Override public void run() {
+        List<StoriesEntity> storiesEntities = before.getStories();
+        StoriesEntity topic = new StoriesEntity();
+        topic.setType(Constant.TOPIC);
+        topic.setTitle(convertDate(date));
+        storiesEntities.add(0, topic);
+        mAdapter.addList(storiesEntities);
+        isLoading = false;
+      }
+    });
   }
 
   private String convertDate(String date) {

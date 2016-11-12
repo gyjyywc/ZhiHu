@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initView() {
+    mToolbar.setTitle("首页");
     setSupportActionBar(mToolbar);
     sr.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
       @Override
@@ -61,23 +62,23 @@ public class MainActivity extends AppCompatActivity {
     curId = "latest";
   }
 
-
   public void replaceFragment() {
     if (curId.equals("latest")) {
       getSupportFragmentManager().beginTransaction()
           .setCustomAnimations(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
-          .replace(R.id.fl_content,
-              new MainFragment(), "latest")
+          .replace(R.id.fl_content, new MainFragment(), "latest")
           .commit();
-    } else {
-
     }
   }
 
-  //public void closeMenu() {
-  //  mDrawerLayout.closeDrawers();
-  //}
-  //
+  public void closeMenu() {
+    mDrawerLayout.closeDrawers();
+  }
+
+  public void setCurId(String id) {
+    curId = id;
+  }
+
   public void setToolbarTitle(String text) {
     mToolbar.setTitle(text);
   }

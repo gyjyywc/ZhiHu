@@ -11,8 +11,10 @@ import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.gyj.zhihu.R;
-import com.gyj.zhihu.adapter.NewsAdapter;
+import com.gyj.zhihu.activity.MainActivity;
+import com.gyj.zhihu.adapter.MenuAdapter;
 import com.gyj.zhihu.model.NewsListItem;
 import com.gyj.zhihu.util.Constant;
 import com.gyj.zhihu.util.HttpUtil;
@@ -31,14 +33,15 @@ public class MenuFragment extends BaseFragment {
   private ListView mLvItem;
   private TextView tv_download, tv_main, tv_backup, tv_login;
   private LinearLayout ll_menu;
+  private List<NewsListItem> jsonData;
 
-  private Handler mHandler = new Handler(){
+  private Handler mHandler = new Handler() {
     @Override public void handleMessage(Message msg) {
       switch (msg.what) {
         case 1:
           String jsonString = (String) msg.obj;
-          List<NewsListItem> jsonData = getJsonData(jsonString);
-          NewsAdapter adapter = new NewsAdapter(mActivity, jsonData);
+          jsonData = getJsonData(jsonString);
+          MenuAdapter adapter = new MenuAdapter(mActivity, jsonData);
           mLvItem.setAdapter(adapter);
           break;
       }
@@ -53,7 +56,23 @@ public class MenuFragment extends BaseFragment {
     tv_backup = (TextView) view.findViewById(R.id.myCollection);
     tv_download = (TextView) view.findViewById(R.id.downLoadOffline);
     tv_main = (TextView) view.findViewById(R.id.tv_main);
+    tv_main.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View v) {
+        ((MainActivity) mActivity).loadLatest();
+        ((MainActivity) mActivity).closeMenu();
+      }
+    });
     mLvItem = (ListView) view.findViewById(R.id.lv_item);
+    mLvItem.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+      @Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        getFragmentManager().beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
+            .replace(R.id.fl_content, new MenuItemFragment(jsonData.get(position).getId()), "news")
+            .commit();
+        ((MainActivity)mActivity).setCurId(jsonData.get(position).getId());
+        ((MainActivity) mActivity).closeMenu();
+      }
+    });
     return view;
   }
 
